@@ -46,6 +46,14 @@ pipeline {
                 }
             }
         }
+    }  
+    post { 
+        success { 
+            echo "New deployment is available : ${currentBuild.displayName}"
+        }
+        failure { 
+            echo "There is a problem, Build: ${currentBuild.displayName}"
+        }
     }
 }
 
