@@ -1,0 +1,6 @@
+version: "3.3"
+services:
+  hello-world:
+    image: demo/hello-world:%VERSION%
+    ports:
+        - "1080:1080"

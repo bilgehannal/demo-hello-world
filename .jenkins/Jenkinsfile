@@ -1,0 +1,59 @@
+
+String baseImage = "base-python"
+
+pipeline {
+
+   agent any
+
+   stages {
+        stage('Init & Version Update') {
+            steps {
+                script {
+                    currentBuild.displayName = "${BUILD_NUMBER}.${BRANCH_NAME}"
+                    sh "sed -i 's/%VERSION%/${currentBuild.displayName}/g' .docker/docker-compose.yaml"
+                    sh "ls /var/lib/jenkins/workspace/HELLO-WORLD_PUSH-PIPELINE_master"
+                }
+            }
+        }
+        stage('Style Control') {
+            steps {
+                script {
+                    COMMAND = "pycodestyle *.py"
+                    sh "docker run ${getDockerParams()} $baseImage sh -c '${COMMAND}'"
+                }
+            }
+        }
+        stage('Unit Test') {
+            steps {
+                script {
+                    COMMAND = "python test.py"
+                    sh "docker run ${getDockerParams()} $baseImage sh -c '${COMMAND}'"
+                }
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                script {
+                    sh "docker build --file .docker/Dockerfile -t demo/hello-world:${currentBuild.displayName} ."
+                }
+            }
+        }
+        stage('Deploy') {
+            when { expression { return BRANCH_NAME == 'master' } }
+            steps {
+                script {
+                    sh "docker-compose -f .docker/docker-compose.yaml down -v"
+                    sh "docker-compose -f .docker/docker-compose.yaml up -d"
+                }
+            }
+        }
+    }
+}
+
+private String getDockerParams() {
+    dockerParameters = [
+        "-v", "$workspace:/usr/src/app"
+    ]
+
+    return "${dockerParameters.join(' ')}"
+}
